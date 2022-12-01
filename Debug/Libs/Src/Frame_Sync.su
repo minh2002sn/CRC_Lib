@@ -1,0 +1,9 @@
+../Libs/Src/Frame_Sync.c:22:13:Rx_Reset	288	static
+../Libs/Src/Frame_Sync.c:27:13:CRC_Update	16	static
+../Libs/Src/Frame_Sync.c:43:13:CRC_Transmit	16	static
+../Libs/Src/Frame_Sync.c:65:13:Stuffed_Transmit	24	static
+../Libs/Src/Frame_Sync.c:85:13:Check_Frame	24	static
+../Libs/Src/Frame_Sync.c:94:6:FRAME_SYNC_Init	4	static
+../Libs/Src/Frame_Sync.c:98:6:FRAME_SYNC_Change_Setting	16	static
+../Libs/Src/Frame_Sync.c:102:6:FRAME_SYNC_Transmit	24	static
+../Libs/Src/Frame_Sync.c:119:6:FRAME_SYNC_Receive	296	static
