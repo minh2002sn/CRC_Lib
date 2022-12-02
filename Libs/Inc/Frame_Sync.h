@@ -15,7 +15,8 @@ typedef struct{
 	CRC_TYPE_t crc_type;
 	uint32_t tx_checksum;
 	uint32_t rx_checksum;
-	uint8_t is_using_stuff_byte;
+	uint8_t is_using_tx_stuff_byte;
+	uint8_t is_using_rx_stuff_byte;
 	uint8_t num_dle_byte;
 	uint8_t rx_state;
 	uint8_t rx_buf[MAX_LENGTH_DATA];

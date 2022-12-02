@@ -90,13 +90,13 @@ void FRAME_SYNC_RxCpltCallback(uint8_t *p_rx_data, uint8_t data_size){
 		sprintf(temp_str, "%02X ", p_rx_data[i]);
 		strcat(tx_str, temp_str);
 	}
-	strcat(tx_str, "\nCRC Correct!!!\n");
+	strcat(tx_str, "\nCRC Correct\n");
 	HAL_UART_Transmit(&huart6, (uint8_t *)tx_str, strlen(tx_str), 1000);
 
 }
 
 void FRAME_SYNC_RxFailCallback(uint8_t *p_rx_data, uint8_t data_size){
-	char tx_str[100] = "\nCRC Fail!!!\n";
+	char tx_str[100] = "\nCRC Fail\n";
 	HAL_UART_Transmit(&huart6, (uint8_t *)tx_str, strlen(tx_str), 1000);
 }
 
@@ -167,7 +167,7 @@ int main(void)
 
 	  COMMAND_LINE_Handle();
 
-	  FRAME_SYNC_Handle();
+//	  FRAME_SYNC_Handle();
 
   }
   /* USER CODE END 3 */
