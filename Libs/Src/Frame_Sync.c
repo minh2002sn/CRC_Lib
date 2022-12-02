@@ -95,6 +95,10 @@ void FRAME_SYNC_Init(){
 
 }
 
+uint8_t FRAME_SYNC_CRC_Type(){
+	return FS_Data.crc_type;
+}
+
 void FRAME_SYNC_Change_Setting(FRAME_SYNC_DATA_t *p_new_data){
 	FS_Data = *p_new_data;
 }
@@ -123,6 +127,7 @@ void FRAME_SYNC_Receive(uint8_t rx_data){
 				FS_Data.is_using_stuff_byte = 1;
 			} else if(rx_data == STX){
 				FS_Data.rx_state = RECEIVING_NUM_DATA;
+				FS_Data.receiving_timer = HAL_GetTick();
 			} else{
 				Rx_Reset();
 			}
@@ -135,6 +140,7 @@ void FRAME_SYNC_Receive(uint8_t rx_data){
 		case RECEIVING_NUM_DATA:
 			FS_Data.rx_length = rx_data;
 			FS_Data.rx_state = RECEIVING_DATA;
+			FS_Data.receiving_timer = HAL_GetTick();
 			break;
 		case RECEIVING_DATA:
 			if(FS_Data.is_using_stuff_byte == 1){
@@ -152,6 +158,7 @@ void FRAME_SYNC_Receive(uint8_t rx_data){
 			FS_Data.rx_buf[FS_Data.rx_pointer++] = rx_data;
 			if(FS_Data.rx_pointer == FS_Data.rx_length){
 				FS_Data.rx_state = RECEIVING_CRC;
+				FS_Data.receiving_timer = HAL_GetTick();
 			} else if(FS_Data.rx_pointer > FS_Data.rx_length){
 				Rx_Reset();
 			}
@@ -161,6 +168,7 @@ void FRAME_SYNC_Receive(uint8_t rx_data){
 			FS_Data.rx_num_crc_byte++;
 			if(FS_Data.rx_num_crc_byte == FS_Data.crc_type){
 				FS_Data.rx_state = RECEIVING_ETX;
+				FS_Data.receiving_timer = HAL_GetTick();
 			}
 			break;
 		case RECEIVING_ETX:
@@ -172,16 +180,20 @@ void FRAME_SYNC_Receive(uint8_t rx_data){
 				} else{
 					FRAME_SYNC_RxFailCallback(FS_Data.rx_buf, FS_Data.rx_length);
 				}
-				FRAME_SYNC_DATA_t temp_data = {FS_Data.crc_type};
-				FS_Data = temp_data;
+				Rx_Reset();
 			} else{
-				FRAME_SYNC_DATA_t temp_data = {FS_Data.crc_type};
-				FS_Data = temp_data;
+				Rx_Reset();
+				FRAME_SYNC_RxFailCallback(FS_Data.rx_buf, FS_Data.rx_length);
 			}
 			break;
 		default:
 			break;
 	}
+}
 
-
+void FRAME_SYNC_Handle(){
+	if(FS_Data.rx_state != SEARCHING_STX && (HAL_GetTick() - FS_Data.receiving_timer > 500)){
+		Rx_Reset();
+		FRAME_SYNC_RxFailCallback(FS_Data.rx_buf, FS_Data.rx_length);
+	}
 }

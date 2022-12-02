@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "Command_Line.h"
 #include "Frame_Sync.h"
 #include "button.h"
 #include "uart.h"
@@ -46,6 +47,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart6;
 
 /* USER CODE BEGIN PV */
 
@@ -55,6 +57,7 @@ UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_USART6_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -72,37 +75,38 @@ BUTTON_HandleTypedef btn;
  * CRC 32	10 02 00 11 22 33 24 C2 31 6D 10 03
  */
 //uint8_t tx_frame_data[] = {0x00, 0x11, 0x22, 0x33};
-uint8_t tx_frame_data[] = {0x10, 0x00, 'n', 0x10, 0x44};
-
+uint8_t tx_frame_data[255];
+uint8_t tx_frame_len = 0;
 void BUTTON_Press_Short_Callback(BUTTON_HandleTypedef *ButtonX){
 	if(ButtonX == &btn){
-		FRAME_SYNC_Transmit(tx_frame_data, sizeof(tx_frame_data));
+		FRAME_SYNC_Transmit(tx_frame_data, tx_frame_len);
 	}
 }
 
 void FRAME_SYNC_RxCpltCallback(uint8_t *p_rx_data, uint8_t data_size){
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 1);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
 	char tx_str[100] = "\nData: ";
 	for(int i = 0; i < data_size; i++){
 		char temp_str[4];
 		sprintf(temp_str, "%02X ", p_rx_data[i]);
 		strcat(tx_str, temp_str);
 	}
-	strcat(tx_str, "\nSuccess !!!\n");
-	HAL_UART_Transmit(&huart2, (uint8_t *)tx_str, strlen(tx_str), 1000);
+	strcat(tx_str, "\nCRC Correct!!!\n");
+	HAL_UART_Transmit(&huart6, (uint8_t *)tx_str, strlen(tx_str), 1000);
 
 }
 
 void FRAME_SYNC_RxFailCallback(uint8_t *p_rx_data, uint8_t data_size){
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 0);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 1);
+	char tx_str[100] = "\nCRC Fail!!!\n";
+	HAL_UART_Transmit(&huart6, (uint8_t *)tx_str, strlen(tx_str), 1000);
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	if(huart->Instance == huart2.Instance){
+	if(huart->Instance == huart6.Instance){
+		COMMAND_LINE_Receive(uart_rx_buf);
+		HAL_UART_Receive_IT(&huart6, &uart_rx_buf, 1);
+	} else if(huart->Instance == huart2.Instance){
 		UART_Receive(uart_rx_buf);
-		HAL_UART_Receive_IT(huart, &uart_rx_buf, 1);
+		HAL_UART_Receive_IT(&huart2, &uart_rx_buf, 1);
 	}
 }
 
@@ -137,11 +141,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
 
   BUTTON_Init(&btn, GPIOA, GPIO_PIN_0, 0);
   BUTTON_Set_Callback_Function(NULL, NULL, BUTTON_Press_Short_Callback, NULL);
 
+  HAL_UART_Receive_IT(&huart6, &uart_rx_buf, 1);
   HAL_UART_Receive_IT(&huart2, &uart_rx_buf, 1);
   UART_Init();
 
@@ -158,6 +164,10 @@ int main(void)
 	  BUTTON_Handle(&btn);
 
 	  UART_Handle();
+
+	  COMMAND_LINE_Handle();
+
+	  FRAME_SYNC_Handle();
 
   }
   /* USER CODE END 3 */
@@ -243,6 +253,39 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * @brief USART6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART6_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART6_Init 0 */
+
+  /* USER CODE END USART6_Init 0 */
+
+  /* USER CODE BEGIN USART6_Init 1 */
+
+  /* USER CODE END USART6_Init 1 */
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 115200;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART6_Init 2 */
+
+  /* USER CODE END USART6_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -254,6 +297,7 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);

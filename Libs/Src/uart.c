@@ -20,7 +20,6 @@ __weak void UART_Handle(){
 	if(UART_Available() != 0){
 		uint8_t t_data = UART_Read();
 		FRAME_SYNC_Receive(t_data);
-		HAL_UART_Transmit(&huart2, &t_data, 1, 100);
 	}
 }
 

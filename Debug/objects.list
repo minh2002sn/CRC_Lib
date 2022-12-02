@@ -29,6 +29,7 @@
 "./Libs/CRC/Src/crckrmit.o"
 "./Libs/CRC/Src/crcsick.o"
 "./Libs/CRC/Src/nmea-chk.o"
+"./Libs/Src/Command_Line.o"
 "./Libs/Src/Frame_Sync.o"
 "./Libs/Src/button.o"
 "./Libs/Src/ring_buffer.o"
